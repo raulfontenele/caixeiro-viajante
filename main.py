@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import random as rd
+import matplotlib.pyplot as plt
 
 def criarArquivoCoordenadas():
     coorX = open("coordenadaX.txt","r")
@@ -17,13 +18,12 @@ def criarMatrizCoordenadas():
     coorX = open("coordenadaX.txt","r")
     coorY = open("coordenadaY.txt","r")
 
-    croms = []
-    
+    coord = []
     for row in coorX:
         coorXY = [int(row),int(coorY.readline())]
-        croms.append(coorXY)
+        coord.append(coorXY)
 
-    return croms
+    return coord
 
 def calcularFitness(populacao):
     # Recuperar matriz de coordenadas
@@ -43,7 +43,7 @@ def calcularFitness(populacao):
 
 def criarPopulacao(tamanho):
 
-    qtdCidades = 100
+    qtdCidades = tamanho
 
     # Criar lista com cidades
     cidades = []
@@ -86,7 +86,7 @@ def roleta(populacao,fitness):
     return novosPais
 
 def crossoverOrdem(pais):
-    # Verificar quantas elementos serão selecionados
+    # Verificar quantos elementos serão selecionados
     num = rd.randint(1,len(pais[0]))
 
     # Adquirir indices a serem mutados
@@ -114,10 +114,12 @@ def crossoverOrdem(pais):
                     if pais[0][i] == pais[1][ind]:
                         ordem[1][idx] = pais[1][ind]
                         idx += 1
+                        break
                 else:
                     if pais[1][i] == pais[0][ind]:
                         ordem[0][idx] = pais[0][ind]
                         idx += 1
+                        break
 
     # Realizar reordenamento
     filhos = []
@@ -131,49 +133,135 @@ def crossoverOrdem(pais):
             else:
                 filho[i] = pais[p][i]
         filhos.append(filho)
-
-    print(filhos)
     
+    return filhos
+    
+def mutacaoDuasTroca(filho):
+
+    # Selecionar elementos índices a serem trocados
+
+    values = np.zeros(2,dtype=int)
+
+    indices = []
+    
+    for index in range(len(filho)):
+        indices.append(index)
+
+    for i in range(2):
+        idc = rd.randint(0,len(indices)-1)
+        values[i] =  idc
+        indices.pop(idc)
+    
+    # Realizar a troca
+    varAux = filho[values[0]]
+    filho[values[0]] = filho[values[1]]
+    filho[values[1]] = varAux
+
+    return filho
+
+def novaPopulacao(pais,fitnessPais,filhos,fitnessFilhos,tamanhoPop):
+
+    fitnessAux = np.concatenate((fitnessPais,fitnessFilhos))
+    vetorAux = pais + filhos
+
+    # Obtendo chave de ordenamento
+    chaves = np.argsort(fitnessAux)
+
+    # Criando nova populacao e novo vetor de fitness
+    novaPopulacao = []
+
+    for chave in chaves[0:tamanhoPop]:
+        novaPopulacao.append(vetorAux[chave])
+
+    fitness = fitnessAux[chaves[0:tamanhoPop]]
+
+    return novaPopulacao,fitness
+
+def plotMelhorCaminho(rota):
+    coordenadas = criarMatrizCoordenadas()
+
+    coorXY = np.zeros( (len(rota), 2) )
+
+    for ind in range( len(rota) ):
+        for eixo in range(2):
+           coorXY[ind][eixo] =  coordenadas[int(rota[ind])][eixo]
+
+    for cid in range( len(rota) ):
+        plt.text(coorXY[cid,0],coorXY[cid,1],chr(int(rota[cid]) + 65) )
+        
+    plt.plot(coorXY[:,0],coorXY[:,1],coorXY[:,0],coorXY[:,1],'bo')
+    plt.title("Melhor rota por geração")
+    plt.show()
+    
+
+
 
 
 def caixeiroViajante(qtdGeracoes,qtdPopulacao,taxaCrossover, taxaMutacao):
     #Criar população inicial
     populacao = criarPopulacao(qtdPopulacao)
 
+    #Realizar avaliações de fitness 
+    fitness = calcularFitness(populacao)
+
+    # Inicializar o melhor global e sua respectiva geração
+
     for geracao in range(qtdGeracoes):
-        #Realizar avaliações de fitness 
-        fitness = calcularFitness(populacao) ##Não precisa estar dentro do for uma vez que forem salvas as avaliações de fitness
+        
+        novosFilhos = []
 
         #Gerar nova população através do método da roleta
         for i in range( int(qtdPopulacao/2) ):
+            
             paisSelecionados = roleta(populacao,fitness)
-
-            crossoverOrdem(paisSelecionados)
 
             ##Verificar a necessidade de crossover
             if rd.random() < taxaCrossover:
-                ##Realizar crossover
-                print("Realizou crossover")
-                filhos = paisSelecionados
+                # Realizar crossover
+                filhos = crossoverOrdem(paisSelecionados)
             else:
-                print("Não Realizou crossover")
+
                 filhos = paisSelecionados
 
             ##Verificar a necessidade de mutação
-            if rd.random() < taxaMutacao:
-                ##Realizar mutacao
-                print("Realizou mutacao")
-            else:
-                novosFilhos = filhos
-                print("Não realizou mutacao")
+
+            for filho in filhos:
+                if rd.random() < taxaMutacao:
+                    #Realizar mutacao
+                    novosFilhos.append( mutacaoDuasTroca(filho) )
+                else:
+                    novosFilhos.append(filho)
         
+        # Calcular fitness dos novos filhos
+        fitnessFilhos = calcularFitness(novosFilhos)
+
         #Ordenar pais e filhos por fitness
+        populacao,fitness = novaPopulacao(populacao,fitness,novosFilhos,fitnessFilhos,qtdPopulacao)
+
+        # Guardar o melhor indivíduo 
+        if geracao == 0:
+            best = [[],[],[]]
+            best[0] = populacao[0]
+            best[1] = fitness[0]
+            best[2] = geracao
+        else:
+            if fitness[0] > best[1]:
+                best[0] = populacao[0]
+                best[1] = fitness[0]
+                best[2] = geracao
+
+        plotMelhorCaminho(best[0])
+
+
+
+
+
 
 
 def main():
 
-    qtdGeracoes = 1
-    qtdPopulacao = 10
+    qtdGeracoes = 10
+    qtdPopulacao = 20
     taxaCrossover = 0.93
     taxaMutacao = 0.01
 
