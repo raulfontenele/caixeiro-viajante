@@ -67,7 +67,7 @@ def criarPopulacao(tamanho):
 def roleta(populacao,fitness):
 
     #criar roleta
-    roulette = fitness/np.sum(fitness)
+    roulette = fitness/np.sum(fitness) # ver a questão da quantidade de casas numérica
 
     novosPais = []
 
@@ -79,7 +79,7 @@ def roleta(populacao,fitness):
         acc = 0
         for index in range(len(fitness)):
             acc += roulette[index]
-            if (num<acc):
+            if num < acc:
                 novosPais.append(populacao[index])
                 break
 
@@ -133,7 +133,7 @@ def crossoverOrdem(pais):
             else:
                 filho[i] = pais[p][i]
         filhos.append(filho)
-    
+
     return filhos
     
 def mutacaoDuasTroca(filho):
@@ -170,14 +170,14 @@ def novaPopulacao(pais,fitnessPais,filhos,fitnessFilhos,tamanhoPop):
     # Criando nova populacao e novo vetor de fitness
     novaPopulacao = []
 
-    for chave in chaves[0:tamanhoPop]:
+    for chave in chaves[len(vetorAux):len(pais)-1:-1]:
         novaPopulacao.append(vetorAux[chave])
 
-    fitness = fitnessAux[chaves[0:tamanhoPop]]
+    fitness = fitnessAux[chaves[len(vetorAux):len(pais)-1:-1]]
 
     return novaPopulacao,fitness
 
-def plotMelhorCaminho(rota):
+def plotCaminhoHistorico(rota,hist):
     coordenadas = criarMatrizCoordenadas()
 
     coorXY = np.zeros( (len(rota), 2) )
@@ -186,11 +186,17 @@ def plotMelhorCaminho(rota):
         for eixo in range(2):
            coorXY[ind][eixo] =  coordenadas[int(rota[ind])][eixo]
 
+    plt.subplot(211)
+
     for cid in range( len(rota) ):
         plt.text(coorXY[cid,0],coorXY[cid,1],chr(int(rota[cid]) + 65) )
         
     plt.plot(coorXY[:,0],coorXY[:,1],coorXY[:,0],coorXY[:,1],'bo')
     plt.title("Melhor rota por geração")
+
+    plt.subplot(212)
+    plt.plot(hist[1],hist[0])
+    plt.title("Histórico de fitness por geração")
     plt.show()
     
 
@@ -203,6 +209,8 @@ def caixeiroViajante(qtdGeracoes,qtdPopulacao,taxaCrossover, taxaMutacao):
 
     #Realizar avaliações de fitness 
     fitness = calcularFitness(populacao)
+    
+    histFit = [[],[]]
 
     # Inicializar o melhor global e sua respectiva geração
 
@@ -219,6 +227,7 @@ def caixeiroViajante(qtdGeracoes,qtdPopulacao,taxaCrossover, taxaMutacao):
             if rd.random() < taxaCrossover:
                 # Realizar crossover
                 filhos = crossoverOrdem(paisSelecionados)
+                #print("Realizou o crossOver")
             else:
 
                 filhos = paisSelecionados
@@ -231,7 +240,7 @@ def caixeiroViajante(qtdGeracoes,qtdPopulacao,taxaCrossover, taxaMutacao):
                     novosFilhos.append( mutacaoDuasTroca(filho) )
                 else:
                     novosFilhos.append(filho)
-        
+
         # Calcular fitness dos novos filhos
         fitnessFilhos = calcularFitness(novosFilhos)
 
@@ -250,22 +259,27 @@ def caixeiroViajante(qtdGeracoes,qtdPopulacao,taxaCrossover, taxaMutacao):
                 best[1] = fitness[0]
                 best[2] = geracao
 
-        plotMelhorCaminho(best[0])
+        # Gravar histórico de fitness por geração
+        histFit[0].append(fitness[0])
+        histFit[1].append(geracao+1)
+    
+    plotCaminhoHistorico(best[0],histFit)
 
-
-
-
+    return best,histFit
 
 
 
 def main():
 
-    qtdGeracoes = 10
-    qtdPopulacao = 20
-    taxaCrossover = 0.93
-    taxaMutacao = 0.01
+    qtdGeracoes = 100
+    qtdPopulacao = 10
+    taxaCrossover = 0.95
+    taxaMutacao = 0.35
 
     caixeiroViajante(qtdGeracoes,qtdPopulacao,taxaCrossover,taxaMutacao)
+    
+
+
 
 
 main()
