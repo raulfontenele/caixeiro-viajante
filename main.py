@@ -3,16 +3,6 @@ import math
 import random as rd
 import matplotlib.pyplot as plt
 
-def criarArquivoCoordenadas():
-    coorX = open("coordenadaX.txt","r")
-    coorY = open("coordenadaY.txt","r")
-    coorXY = open("coordenadaXY.txt",'a')
-
-    for row in coorX:
-        cx = row.replace("\n",'')
-        cy = coorY.readline()
-        coorXY.write(cx + "," + cy)
-
 def criarMatrizCoordenadas():
 
     coorX = open("coordenadaX.txt","r")
@@ -192,15 +182,13 @@ def plotCaminhoHistorico(rota,hist):
         plt.text(coorXY[cid,0],coorXY[cid,1],chr(int(rota[cid]) + 65) )
         
     plt.plot(coorXY[:,0],coorXY[:,1],coorXY[:,0],coorXY[:,1],'bo')
-    plt.title("Melhor rota por geração")
+    plt.title("Melhor rota")
 
     plt.subplot(212)
     plt.plot(hist[1],hist[0])
     plt.title("Histórico de fitness por geração")
     plt.show()
     
-
-
 
 
 def caixeiroViajante(qtdGeracoes,qtdPopulacao,taxaCrossover, taxaMutacao):
@@ -227,7 +215,6 @@ def caixeiroViajante(qtdGeracoes,qtdPopulacao,taxaCrossover, taxaMutacao):
             if rd.random() < taxaCrossover:
                 # Realizar crossover
                 filhos = crossoverOrdem(paisSelecionados)
-                #print("Realizou o crossOver")
             else:
 
                 filhos = paisSelecionados
@@ -278,8 +265,6 @@ def main():
 
     caixeiroViajante(qtdGeracoes,qtdPopulacao,taxaCrossover,taxaMutacao)
     
-
-
 
 
 main()
